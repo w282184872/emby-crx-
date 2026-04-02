@@ -38,8 +38,10 @@ get_env_info() {
         # 定位目录
         UI_PATH=""
         for p in "/system/dashboard-ui" "/app/emby/system/dashboard-ui"; do
-            if docker exec "$CONTAINER_NAME" test -d "$p"; then UI_PATH="$p"; break; ffi
+            # 这里修复了 ffi 的拼写错误为 fi
+            if docker exec "$CONTAINER_NAME" test -d "$p"; then UI_PATH="$p"; break; fi
         done
+        
         if [ -z "$UI_PATH" ]; then
             UI_PATH=$(docker exec "$CONTAINER_NAME" find / -maxdepth 5 -type d -name "dashboard-ui" 2>/dev/null | head -n 1)
         fi
@@ -91,7 +93,7 @@ do_install() {
         fi
     fi
     rm -rf "$TEMP_DIR"
-    echo -e "${GREEN}[成功] 主题安装完成！请刷新浏览器。${RESET}"
+    echo -e "${GREEN}[成功] 主题操作完成！请刷新浏览器 (Ctrl+F5) 查看效果。${RESET}"
 }
 
 # --- 功能：执行卸载还原 ---
@@ -100,7 +102,6 @@ do_uninstall() {
     
     if [ "$ENV_CHOICE" == "1" ]; then
         # Docker 卸载逻辑
-        # 1. 移除注入的代码
         docker cp "${CONTAINER_NAME}:${UI_PATH}/index.html" ./index_to_clean.html
         sed -i '/theme-css/d' ./index_to_clean.html
         sed -i '/common-utils.js/d' ./index_to_clean.html
@@ -110,7 +111,6 @@ do_uninstall() {
         docker cp ./index_to_clean.html "${CONTAINER_NAME}:${UI_PATH}/index.html"
         rm ./index_to_clean.html
         
-        # 2. 删除文件
         for file in "${FILES[@]}"; do
             docker exec "$CONTAINER_NAME" rm -f "${UI_PATH}/$file"
         done
